@@ -1,13 +1,13 @@
-import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
+import { Todos } from '~/components/todos';
+import type { Route } from './+types/home';
 
 export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
-  ];
+	return [
+		{ title: 'Todos Test Assignment' },
+		{ name: 'description', content: 'Todos Test Assignment' },
+	];
 }
 
 export default function Home() {
-  return <Welcome />;
+	return <Todos />;
 }
