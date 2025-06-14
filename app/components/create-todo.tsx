@@ -28,11 +28,20 @@ export const CreateTodo = () => {
 	};
 
 	return (
-		<div className='flex flex-col gap-2 p-4  group'>
+		<div className='flex flex-col gap-2 p-4 group min-h-screen items-center justify-center'>
+			<div className='flex justify-start items-center w-full max-w-2xl mb-4'>
+				<Button
+					variant='outline'
+					className='cursor-pointer w-fit !self-start'
+					onClick={() => navigate('/todos')}>
+					Go Back
+				</Button>
+			</div>
+
 			{/* TODO: Add a form with a title input and a submit button */}
 			<form
 				onSubmit={handleSubmit}
-				className='flex flex-col gap-2 w-full max-w-3xl mx-auto rounded-lg border border-gray-200 hover:border-gray-300 transition-colors duration-200 bg-white shadow-sm hover:shadow-md p-4'>
+				className='flex flex-col gap-2 w-full max-w-2xl mx-auto rounded-lg border border-gray-200 hover:border-gray-300 transition-colors duration-200 bg-white shadow-sm hover:shadow-md p-4'>
 				<p>Title</p>
 				<input
 					type='text'

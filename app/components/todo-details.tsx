@@ -39,14 +39,16 @@ export const TodoDetails: FC<{
 	});
 
 	return (
-		<div className='flex flex-col gap-6 p-8 max-w-4xl mx-auto'>
+		<section className='flex flex-col gap-6 p-8 max-w-4xl mx-auto min-h-screen items-center justify-center'>
 			{/* Button to go back to the home page */}
-			<Button
-				variant='outline'
-				className='cursor-pointer w-fit'
-				onClick={() => navigate('/todos')}>
-				Go Back
-			</Button>
+			<div className='flex justify-start items-center w-full max-w-2xl px-8'>
+				<Button
+					variant='outline'
+					className='cursor-pointer w-fit !self-start'
+					onClick={() => navigate('/todos')}>
+					Go Back
+				</Button>
+			</div>
 
 			{isLoadingTodoDetails ? (
 				// show a better loading state
@@ -94,7 +96,7 @@ export const TodoDetails: FC<{
 						</div>
 					</div>
 
-					<div className='flex items-center justify-end gap-x-2 max-w-[500px] mx-auto'>
+					<div className='flex items-center justify-end gap-x-2 max-w-2xl mx-auto'>
 						<Button
 							variant='default'
 							className='bg-blue-500 text-white rounded-md hover:bg-blue-600 cursor-pointer'
@@ -113,6 +115,6 @@ export const TodoDetails: FC<{
 					</div>
 				</>
 			)}
-		</div>
+		</section>
 	);
 };
