@@ -15,7 +15,7 @@ import {
 	PaginationPrevious,
 } from './ui/pagination';
 import { cn } from '~/lib/utils';
-import { getPaginationNumbers } from '~/hooks/useShowPaginationNumbers';
+import { getPaginationNumbers } from '~/lib/get-pagination-numbers';
 
 const ITEMS_PER_PAGE = 10;
 
