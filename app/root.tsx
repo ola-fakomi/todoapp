@@ -13,13 +13,8 @@ import { useRef } from 'react';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import CreateTodoModal from "./components/createTodoModal";
-
-
 import { Toaster } from '~/components/ui/sonner';
 import './app.css';
-
-
 
 export const links = () => [
 	{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -59,7 +54,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 	);
 }
 
-
 export default function App() {
 	if (typeof window === 'undefined') {
 		return <Outlet />;
@@ -78,7 +72,6 @@ export default function App() {
 	return (
 		<>
 			<Outlet />
-		
 		</>
 	);
 }

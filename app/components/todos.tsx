@@ -1,11 +1,11 @@
 import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useLocation, Link } from 'react-router-dom';
+import { useDebounceValue } from 'usehooks-ts';
 
 import { todoApiService } from '~/apis/service';
 import { TodoComponent } from '~/components/todo';
 import { Button } from './ui/button';
-import { TodoFilterCombobox } from './ui/TodoFilterCombobox'; 
+import { TodoFilterCombobox } from './ui/TodoFilterCombobox';
 import { Input } from './ui/input';
 
 import {
@@ -21,54 +21,40 @@ import {
 import { cn } from '~/lib/utils';
 import { getPaginationNumbers } from '~/lib/get-pagination-numbers';
 import CreateTodoModal from './createTodoModal';
-
-const ITEMS_PER_PAGE = 10;
-
+import type { TODO_STATUS } from '~/types';
 
 export const Todos: FC = () => {
 	const [search, setSearch] = useState('');
-	const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'incomplete'>('all');
-	const [page, setPage] = useState(0);
+	const [debouncedSearch] = useDebounceValue(search, 500);
+	const [page, setPage] = useState(1);
+	const [statusFilter, setStatusFilter] = useState<TODO_STATUS | undefined>();
 	const [modalOpen, setModalOpen] = useState(false);
 
 	const containerRef = useRef<HTMLUListElement>(null);
-	const location = useLocation();
 
-	const { data: todos, isLoading: isLoadingTodos } = useQuery({
-		queryKey: ['todos'],
-		queryFn: todoApiService.getTodos,
-		
+	const { data: todoResults, isLoading: isLoadingTodos } = useQuery({
+		queryKey: ['todos', page, statusFilter, debouncedSearch],
+		queryFn: () => todoApiService.getTodos(page, statusFilter, debouncedSearch),
 	});
 
-	
-
-	const filteredTodos = useMemo(() => {
-		let result = todos ?? [];
-		result = result.filter((todo) =>
-			todo.title.toLowerCase().includes(search.toLowerCase())
-		);
-		if (statusFilter === 'completed') result = result.filter((t) => t.completed);
-		if (statusFilter === 'incomplete') result = result.filter((t) => !t.completed);
-		return result;
-	}, [todos, search, statusFilter]);
-
-	const itemOffset = page * ITEMS_PER_PAGE;
-	const endOffset = itemOffset + 10;
-	const totalPages = useMemo(
-		() => Math.ceil((filteredTodos?.length ?? 0) / ITEMS_PER_PAGE),
-		[filteredTodos]
-	);
-
-	const paginatedTodos = filteredTodos?.slice(itemOffset, endOffset);
+	const todos = todoResults?.data ?? [];
+	const paginationResults = todoResults?.meta ?? {
+		hasNextPage: false,
+		hasPreviousPage: false,
+		limit: 0,
+		page: 0,
+		total: 0,
+		totalPages: 0,
+	};
 
 	const paginatedPagesToShow = useMemo(
 		() =>
 			getPaginationNumbers({
 				maxVisible: 6,
-				totalPages,
-				currentPage: page,
+				totalPages: paginationResults.totalPages,
+				currentPage: paginationResults.page,
 			}),
-		[totalPages, page]
+		[paginationResults]
 	);
 
 	useEffect(() => {
@@ -82,17 +68,16 @@ export const Todos: FC = () => {
 
 	return (
 		<section className='flex flex-col gap-4 py-10 items-center justify-center min-h-screen'>
-			<div className="flex flex-col gap-4 w-full max-w-2xl">
-				
-				<h1 className='text-2xl font-bold text-center text-[#006754]'>Todo-App</h1>
-				
-				<div className="flex flex-wrap justify-between items-center gap-4">
-					<div className="flex flex-wrap items-center gap-2">
-						
-						<TodoFilterCombobox 
-							value={statusFilter} 
-							onChange={setStatusFilter} 
-				
+			<div className='flex flex-col gap-4 w-full max-w-2xl'>
+				<h1 className='text-2xl font-bold text-center text-[#006754]'>
+					Todo-App
+				</h1>
+
+				<div className='flex flex-wrap justify-between items-center gap-4'>
+					<div className='flex flex-wrap items-center gap-2'>
+						<TodoFilterCombobox
+							value={statusFilter}
+							onChange={setStatusFilter}
 						/>
 
 						<Input
@@ -103,13 +88,14 @@ export const Todos: FC = () => {
 							className='w-full md:w-[200px] rounded-lg'
 						/>
 					</div>
-			
-						<Button className='w-fit rounded-lg bg-[#006754]' variant='default' onClick={() => setModalOpen(prev => !prev)}>
-							Create Todo
-						</Button>
-					
-				</div>
 
+					<Button
+						className='w-fit rounded-lg bg-[#006754]'
+						variant='default'
+						onClick={() => setModalOpen((prev) => !prev)}>
+						Create Todo
+					</Button>
+				</div>
 			</div>
 
 			<ul
@@ -117,20 +103,21 @@ export const Todos: FC = () => {
 				className='w-full flex flex-col gap-1 max-w-2xl mx-auto border border-[#F8F8F8] bg-[#F8F8F8] rounded-2xl p-2 max-h-[600px] min-h-[400px] overflow-y-auto'>
 				{todos?.length === 0 && !isLoadingTodos && <li>No todos found</li>}
 				{isLoadingTodos && <li>Loading...</li>}
-				{paginatedTodos?.map((todo) => (
+				{todos?.map((todo) => (
 					<TodoComponent key={todo.id} todo={todo} />
 				))}
 			</ul>
 
-			<Pagination className={cn(totalPages < 1 && 'hidden')}>
+			<Pagination className={cn(paginationResults.totalPages < 1 && 'hidden')}>
 				<PaginationContent>
 					<PaginationItem
 						className={cn(
-							page === 0 && 'opacity-50 cursor-not-allowed pointer-events-none'
+							!paginationResults.hasPreviousPage &&
+								'opacity-50 cursor-not-allowed pointer-events-none'
 						)}>
 						<PaginationPrevious
 							href='#'
-							onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
+							onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
 						/>
 					</PaginationItem>
 					{paginatedPagesToShow.map((_page, idx) =>
@@ -142,8 +129,8 @@ export const Todos: FC = () => {
 							<PaginationItem key={idx}>
 								<PaginationLink
 									href='#'
-									isActive={page === Number(_page) - 1}
-									onClick={() => setPage(Number(_page) - 1)}>
+									isActive={page === Number(_page)}
+									onClick={() => setPage(Number(_page))}>
 									{_page}
 								</PaginationLink>
 							</PaginationItem>
@@ -151,23 +138,22 @@ export const Todos: FC = () => {
 					)}
 					<PaginationItem
 						className={cn(
-							page === totalPages - 1 &&
+							!paginationResults.hasNextPage &&
 								'opacity-50 cursor-not-allowed pointer-events-none'
 						)}>
 						<PaginationNext
 							href='#'
 							onClick={() =>
-								setPage((prev) => Math.min(prev + 1, totalPages - 1))
+								setPage((prev) =>
+									Math.min(prev + 1, paginationResults.totalPages)
+								)
 							}
 						/>
 					</PaginationItem>
 				</PaginationContent>
 			</Pagination>
 
-			{
-				modalOpen && (<CreateTodoModal closeModal={() => setModalOpen(false)} />)	
-			}
-
+			{modalOpen && <CreateTodoModal closeModal={() => setModalOpen(false)} />}
 		</section>
 	);
 };

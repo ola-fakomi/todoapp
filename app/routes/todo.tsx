@@ -13,5 +13,5 @@ export function meta({}: Route.MetaArgs) {
 export default function TodoDetailsPage() {
 	const { id } = useParams();
 
-	return <TodoDetails id={Number(id)} />;
+	return <TodoDetails id={id ?? ''} />;
 }

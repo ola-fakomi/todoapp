@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { todoApiService } from '~/apis/service';
-import { cn } from '~/lib/utils';
-import type { Todo } from '~/types';
+import { cn, getStatusColor, getStatusText } from '~/lib/utils';
+import { TODO_STATUS, type Todo } from '~/types';
 import { queryClient } from '~/root';
 import { Button } from './ui/button';
 
 export const TodoDetails: FC<{
-	id: number;
+	id: string;
 }> = ({ id }) => {
 	const navigate = useNavigate();
 
@@ -33,7 +33,6 @@ export const TodoDetails: FC<{
 		mutationFn: () => todoApiService.deleteTodo(id),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['todos'] });
-			// queryClient.removeQueries({ queryKey: ['todo', id] });
 			navigate('/todos');
 		},
 	});
@@ -59,38 +58,29 @@ export const TodoDetails: FC<{
 				<>
 					<div className='flex flex-col gap-6 p-8 w-full max-w-2xl mx-auto'>
 						<div className='flex items-center justify-between gap-x-2'>
-							<h1 className='text-2xl font-bold text-gray-800'>
-								{todo?.title}
-							</h1>
+							<h1 className='text-2xl font-bold text-gray-800'>{todo?.name}</h1>
 							<div
 								className={cn(
 									'px-1 py-0.5 rounded-full text-xs font-medium min-w-[100px] text-center',
-									todo?.completed
-										? 'bg-green-100 text-green-800'
-										: 'bg-yellow-100 text-yellow-800'
+									getStatusColor(todo?.status ?? TODO_STATUS.TODO),
+									todo?.status === TODO_STATUS.TODO && 'text-white'
 								)}>
-								{todo?.completed ? 'Completed' : 'In Progress'}
+								{getStatusText(todo?.status ?? TODO_STATUS.TODO)}
 							</div>
 						</div>
 
 						<div className='space-y-4'>
-							<div className='bg-white rounded-lg border border-gray-200 p-6'>
+							<div className='bg-white rounded-lg border border-gray-200 p-6 '>
 								<h2 className='text-lg font-semibold text-gray-700 mb-2'>
 									Details
 								</h2>
-								<div className='space-y-3'>
-									<div className='flex items-center gap-2'>
-										<span className='text-gray-500'>ID:</span>
-										<span className='font-medium'>{todo?.id}</span>
-									</div>
-									<div className='flex items-center gap-2'>
-										<span className='text-gray-500'>User ID:</span>
-										<span className='font-medium'>{todo?.userId}</span>
-									</div>
-									<div className='flex items-start gap-2'>
-										<span className='text-gray-500'>Description:</span>
-										<p className='font-medium'>{todo?.title}</p>
-									</div>
+								<div className='space-y-3 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100'>
+									{Object.entries(todo ?? {}).map(([key, value]) => (
+										<div className='flex items-center gap-2'>
+											<span className='text-gray-500 capitalize'>{key}:</span>
+											<span className='font-medium'>{value || 'NIL'}</span>
+										</div>
+									))}
 								</div>
 							</div>
 						</div>
@@ -100,7 +90,14 @@ export const TodoDetails: FC<{
 						<Button
 							variant='default'
 							className='bg-blue-500 text-white rounded-md hover:bg-blue-600 cursor-pointer'
-							onClick={() => editTodo({ completed: !todo?.completed })}
+							onClick={() =>
+								editTodo({
+									status:
+										todo?.status === TODO_STATUS.DONE
+											? TODO_STATUS.TODO
+											: TODO_STATUS.DONE,
+								})
+							}
 							disabled={isEditingTodo}>
 							{isEditingTodo ? 'Saving...' : 'Toggle Completion'}
 						</Button>
