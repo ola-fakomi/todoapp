@@ -1,10 +1,13 @@
 import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation, Link } from 'react-router-dom';
 
 import { todoApiService } from '~/apis/service';
 import { TodoComponent } from '~/components/todo';
-import { Link } from 'react-router';
 import { Button } from './ui/button';
+import { TodoFilterCombobox } from './ui/TodoFilterCombobox'; 
+import { Input } from './ui/input';
+
 import {
 	Pagination,
 	PaginationContent,
@@ -14,39 +17,40 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from './ui/pagination';
+
 import { cn } from '~/lib/utils';
 import { getPaginationNumbers } from '~/lib/get-pagination-numbers';
+import CreateTodoModal from './createTodoModal';
 
 const ITEMS_PER_PAGE = 10;
 
+
 export const Todos: FC = () => {
-	// use this to filter the todos by title
 	const [search, setSearch] = useState('');
-
-	// use this to filter the todos by completed status
-	const [completed, setCompleted] = useState(false);
-
-	// use this to paginate the todos
+	const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'incomplete'>('all');
 	const [page, setPage] = useState(0);
+	const [modalOpen, setModalOpen] = useState(false);
 
 	const containerRef = useRef<HTMLUListElement>(null);
+	const location = useLocation();
 
 	const { data: todos, isLoading: isLoadingTodos } = useQuery({
-		// This key is used to identify the query so you can cache the data
 		queryKey: ['todos'],
-		// This function is used to fetch the data
 		queryFn: todoApiService.getTodos,
+		
 	});
 
-	const filteredTodos = useMemo(
-		() =>
-			todos
-				?.filter((todo) =>
-					todo.title.toLowerCase().includes(search.toLowerCase())
-				)
-				.filter((todo) => todo.completed === completed),
-		[todos, search, completed]
-	);
+	
+
+	const filteredTodos = useMemo(() => {
+		let result = todos ?? [];
+		result = result.filter((todo) =>
+			todo.title.toLowerCase().includes(search.toLowerCase())
+		);
+		if (statusFilter === 'completed') result = result.filter((t) => t.completed);
+		if (statusFilter === 'incomplete') result = result.filter((t) => !t.completed);
+		return result;
+	}, [todos, search, statusFilter]);
 
 	const itemOffset = page * ITEMS_PER_PAGE;
 	const endOffset = itemOffset + 10;
@@ -78,26 +82,41 @@ export const Todos: FC = () => {
 
 	return (
 		<section className='flex flex-col gap-4 py-10 items-center justify-center min-h-screen'>
-			<div className='flex justify-between items-center w-full max-w-2xl gap-x-2'>
-				<h1 className='text-2xl font-bold text-center'>Todos</h1>
+			<div className="flex flex-col gap-4 w-full max-w-2xl">
+				
+				<h1 className='text-2xl font-bold text-center text-[#006754]'>Todo-App</h1>
+				
+				<div className="flex flex-wrap justify-between items-center gap-4">
+					<div className="flex flex-wrap items-center gap-2">
+						
+						<TodoFilterCombobox 
+							value={statusFilter} 
+							onChange={setStatusFilter} 
+				
+						/>
 
-				<Link to='/todos/create' className='w-fit'>
-					<Button className='w-fit mx-auto' variant='default'>
-						Create Todo
-					</Button>
-				</Link>
+						<Input
+							type='text'
+							value={search}
+							onChange={(e) => setSearch(e.target.value)}
+							placeholder='Search todos...'
+							className='w-full md:w-[200px] rounded-lg'
+						/>
+					</div>
+			
+						<Button className='w-fit rounded-lg bg-[#006754]' variant='default' onClick={() => setModalOpen(prev => !prev)}>
+							Create Todo
+						</Button>
+					
+				</div>
+
 			</div>
 
 			<ul
 				ref={containerRef}
-				className='w-full flex flex-col gap-2 max-w-2xl mx-auto border border-gray-300 rounded-md p-4 max-h-[600px] min-h-[400px] overflow-y-auto'>
-				{/* Render a message if there are no todos */}
+				className='w-full flex flex-col gap-1 max-w-2xl mx-auto border border-[#F8F8F8] bg-[#F8F8F8] rounded-2xl p-2 max-h-[600px] min-h-[400px] overflow-y-auto'>
 				{todos?.length === 0 && !isLoadingTodos && <li>No todos found</li>}
-
-				{/* Use a better loading state here */}
 				{isLoadingTodos && <li>Loading...</li>}
-
-				{/* Render the todos that you fetch */}
 				{paginatedTodos?.map((todo) => (
 					<TodoComponent key={todo.id} todo={todo} />
 				))}
@@ -144,6 +163,11 @@ export const Todos: FC = () => {
 					</PaginationItem>
 				</PaginationContent>
 			</Pagination>
+
+			{
+				modalOpen && (<CreateTodoModal closeModal={() => setModalOpen(false)} />)	
+			}
+
 		</section>
 	);
 };

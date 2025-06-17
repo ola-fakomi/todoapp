@@ -5,12 +5,21 @@ import {
 	Outlet,
 	Scripts,
 	ScrollRestoration,
+	useLocation,
+	useNavigationType,
 } from 'react-router';
+
+import { useRef } from 'react';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+import CreateTodoModal from "./components/createTodoModal";
+
+
 import { Toaster } from '~/components/ui/sonner';
 import './app.css';
+
+
 
 export const links = () => [
 	{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -25,7 +34,7 @@ export const links = () => [
 	},
 ];
 
-// To use the query client, you need to wrap your app in the QueryClientProvider
+//Wrap your app in the QueryClientProvider
 export const queryClient = new QueryClient();
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -50,8 +59,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
 	);
 }
 
+
 export default function App() {
-	return <Outlet />;
+	if (typeof window === 'undefined') {
+		return <Outlet />;
+	}
+
+	const location = useLocation();
+	const navigationType = useNavigationType();
+	const previousLocation = useRef(location);
+
+	const isModal = location.state?.modal && navigationType === 'PUSH';
+
+	if (!isModal) {
+		previousLocation.current = location;
+	}
+
+	return (
+		<>
+			<Outlet />
+		
+		</>
+	);
 }
 
 export function ErrorBoundary({ error }: { error: unknown }) {
